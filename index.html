@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <meta charset="utf-8" />
+        <title>brentsnixon</title>
+        <link rel="stylesheet" href="/theme/css/main.css" />
+
+        <!--[if IE]>
+            <script src="https://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+</head>
+
+<body id="index" class="home">
+        <header id="banner" class="body">
+                <h1><a href="/">brentsnixon </a></h1>
+                <nav><ul>
+                    <li><a href="/category/etl.html">etl</a></li>
+                </ul></nav>
+        </header><!-- /#banner -->
+
+            <aside id="featured" class="body">
+                <article>
+                    <h1 class="entry-title"><a href="/wrangle-osm.html">Wrangle OSM</a></h1>
+<footer class="post-info">
+        <abbr class="published" title="2017-10-10T00:00:00-07:00">
+                Published: Tue 10 October 2017
+        </abbr>
+
+        <address class="vcard author">
+                By                         <a class="url fn" href="/author/brent-nixon.html">Brent Nixon</a>
+        </address>
+<p>In <a href="/category/etl.html">etl</a>.</p>
+<p>tags: <a href="/tag/etl.html">etl</a> <a href="/tag/preprocessing.html">preprocessing</a> </p>
+</footer><!-- /.post-info -->
+  <div tabindex="-1" id="notebook" class="border-box-sizing">
+    <div class="container" id="notebook-container">
+
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h1 id="Data-Wrangling-Project---Open-Street-Map">Data Wrangling Project - Open Street Map<a class="anchor-link" href="#Data-Wrangling-Project---Open-Street-Map">&#182;</a></h1><p><strong>Brent Nixon, Dec. 2017</strong></p>
+<h2 id="Table-of-Contents">Table of Contents<a class="anchor-link" href="#Table-of-Contents">&#182;</a></h2><ul>
+<li><a href="#Introduction">Introduction</a></li>
+<li><a href="#Extracting Data from OSM">Extracting Data from OSM</a></li>
+<li><a href="#Overview of Data and Checking for Problems">Overview of Data and Checking for Problems</a></li>
+<li><a href="#Data Processing and Cleaning">Data Processing and Cleaning</a></li>
+<li><a href="#Loading Data into SQL">Loading Data into SQL</a></li>
+<li><a href="#Exploration of Data with SQL">Exploration of Data with SQL</a></li>
+<li><a href="#Worthy Options for Further Cleaning">Worthy Options for Further Cleaning</a></li>
+</ul>
+<p>Reference:
+<a href="http://sebastianraschka.com/Articles/2014_ipython_internal_links.html#top">http://sebastianraschka.com/Articles/2014_ipython_internal_links.html#top</a></p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Introduction-">Introduction <a id="Introduction" /><a class="anchor-link" href="#Introduction-">&#182;</a></h2><blockquote><p>In this project, I will examine a section of the Open Street Map (OSM). To do this, I will extract the data from OSM, process the data programatically, look for issues in the data (such as cleanliness, uniformity, and validity), load the data into a local SQL database, and then explore the data using SQL to get an overview of the area.</p>
+<p>I chose to examine OSM data from the southeast part of Charlotte, North Carolina, which is where I grew up.</p>
+<p>Navigate to this link to examine the bounding box describing the area I worked with: <a href="http://www.openstreetmap.org/relation/177415#map=11/35.2033/-80.8401">http://www.openstreetmap.org/relation/177415#map=11/35.2033/-80.8401</a></p>
+<p>Charlotte is an interesting city because it has a wide variety of urbanism. There is a dense urban core with high-rises, semi-urban mixed residential and commercial areas, sub-urban residential areas, and low-density sprawl. For a mapping project, there would certainly be a variety of features and idiosyncrasies to sort out.</p>
+</blockquote>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Extracting-Data-from-OSM-">Extracting Data from OSM <a id="Extracting Data from OSM" /><a class="anchor-link" href="#Extracting-Data-from-OSM-">&#182;</a></h2><blockquote><p>The first step in this process is to obtain the data from OSM, we need to make an HTTP request using the Overpass API. The python script, <em>OSM_data_acquisition.py</em> (adapted from the Udacity case study helper), takes an OSM url showing the location of interest, and writes the streaming requests object line by line to a file.</p>
+<p>For our final work, we want to work with at least a 50mb file, but to start out, I will explore the data and test my code using a 5-10mb file. The data acquisition script will create a sample file that takes elements from throughout the project file to give an accurate representation of issues that will be found in the data. Once I have tested all my data cleaning and transformation functions, I will use a second part of the data acquisition script to pull a 50mb chunk of data for the area of interest in Charlotte.</p>
+</blockquote>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Overview-of-Data-and-Checking-for-Problems-">Overview of Data and Checking for Problems <a id="Overview of Data and Checking for Problems" /><a class="anchor-link" href="#Overview-of-Data-and-Checking-for-Problems-">&#182;</a></h2><blockquote><p>Now that I have a sample XML file with data from Charlotte, I want to get a rough overview of the data using the way and node tags. This will help me have a working understanding of what my code is checking and what kind of data cleaning I might need to do.</p>
+<p>I used the script, <em>explore_element_types.py</em>, to explore element types and counts. The function will iterate through the XML file finding tags. If a tag name is new, it will add that name to a dictionary. Otherwise, it will add one to the count for that tag type. See the execution below for tag types and counts.</p>
+</blockquote>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[5]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># execute function on XML file</span>
+<span class="n">pprint</span><span class="o">.</span><span class="n">pprint</span><span class="p">(</span><span class="n">count_tags</span><span class="p">(</span><span class="s2">&quot;Charlotte_AOI.xml&quot;</span><span class="p">))</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>{&#39;bounds&#39;: 1,
+ &#39;member&#39;: 10600,
+ &#39;meta&#39;: 1,
+ &#39;nd&#39;: 306987,
+ &#39;node&#39;: 270362,
+ &#39;note&#39;: 1,
+ &#39;osm&#39;: 1,
+ &#39;relation&#39;: 171,
+ &#39;tag&#39;: 77094,
+ &#39;way&#39;: 31370}
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h4 id="Overview-of-Data-Structure">Overview of Data Structure<a class="anchor-link" href="#Overview-of-Data-Structure">&#182;</a></h4><blockquote><p>From the above output, we can see that there are a variety of different tags. The primary tags, however, are nd, node, tag, member, way, and relation.</p>
+<p>From the OSM documentation, we see that the basic structure of OSM data is comprised of nodes, ways, and relations. Nodes are points on the map, ways are an ordered list of connected nodes (describing things like roads, rivers, etc...), and relations are composed of related members (nodes and ways).</p>
+<p>Tag elements are sub-elements of each way, node, and relation, whose attributes provide further information that describe the way, node, or relation. Nd elements are sub-elements of ways, which reference the node elements that compose the way.</p>
+<p>The last few elements, bounds,meta, note, and osm are all part of the header information of the XML document. The bounds tag contains coordinates showing the map area that the data is from.</p>
+<p><em>Reference:</em></p>
+<p><em><a href="http://wiki.openstreetmap.org/wiki/Map_Features">http://wiki.openstreetmap.org/wiki/Map_Features</a></em></p>
+</blockquote>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h4 id="Checking-for-Compound-Values-and-Problem-Characters">Checking for Compound Values and Problem Characters<a class="anchor-link" href="#Checking-for-Compound-Values-and-Problem-Characters">&#182;</a></h4><blockquote><p>In some of the tags, there are attributes that have values containing two pieces of information in one text string, e.g. "addr:street" instead of "address" and "street." When we bring that information into a SQL databases, it would be preferable to have those two pieces of information separated.</p>
+<p>Using the script, <em>colonANDprobchar_count.py</em> (adapted from the Udacity case study helper), I will use regular expressions to identify elements whose "k" attributes have a structure with colons as specified above, as well as attributes which do not and attributes which have problematic characters like #, ?, etc... This will help me isolate and correct those issues. See the output from running that script below.</p>
+</blockquote>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[6]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># execute process_map on XML file</span>
+<span class="n">keys</span> <span class="o">=</span> <span class="n">process_map</span><span class="p">(</span><span class="s1">&#39;Charlotte_AOI.xml&#39;</span><span class="p">)</span>
+<span class="n">pprint</span><span class="o">.</span><span class="n">pprint</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>{&#39;lower&#39;: 51567, &#39;lower_colon&#39;: 23439, &#39;other&#39;: 2088, &#39;problemchars&#39;: 0}
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h4 id="The-above-output-shows-that-there-are:">The above output shows that there are:<a class="anchor-link" href="#The-above-output-shows-that-there-are:">&#182;</a></h4><blockquote><ul>
+<li>51567 "k" attributes that are lower case letters and do not have any colons or problematic characters, there are </li>
+<li>23439 "k" attributes with the colon structure</li>
+<li>0 "k" attributes with problematic characters</li>
+<li>2088 "k" attributes that don't fit into either of those three categories.</li>
+</ul>
+</blockquote>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h4 id="Examining-Different-Tag-Types">Examining Different Tag Types<a class="anchor-link" href="#Examining-Different-Tag-Types">&#182;</a></h4><blockquote><p>Now I'm curious what the values in each of those categories look like. I'll use another script, <em>colonANDprobchar_overview.py</em>, to add each type of attribute value to a list. Then I can print a sample of those values to get a better idea of what they are.</p>
+</blockquote>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[7]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># execute process_map function on XML file</span>
+<span class="n">key_vals</span> <span class="o">=</span> <span class="n">process_map</span><span class="p">(</span><span class="s1">&#39;Charlotte_AOI.xml&#39;</span><span class="p">)</span>
+
+<span class="c1"># print out different types of values</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;sample of &#39;lower&#39; values:&quot;</span><span class="p">)</span>
+<span class="n">pprint</span><span class="o">.</span><span class="n">pprint</span><span class="p">(</span><span class="n">key_vals</span><span class="p">[</span><span class="s2">&quot;lower&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">::</span><span class="mi">2100</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;sample of &#39;lower_colon&#39; values:&quot;</span><span class="p">)</span>
+<span class="n">pprint</span><span class="o">.</span><span class="n">pprint</span><span class="p">(</span><span class="n">key_vals</span><span class="p">[</span><span class="s2">&quot;lower_colon&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">::</span><span class="mi">1000</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;sample of &#39;other&#39; values:&quot;</span><span class="p">)</span>
+<span class="n">pprint</span><span class="o">.</span><span class="n">pprint</span><span class="p">(</span><span class="n">key_vals</span><span class="p">[</span><span class="s2">&quot;other&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">::</span><span class="mi">120</span><span class="p">])</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>sample of &#39;lower&#39; values:
+[&#39;ele&#39;,
+ &#39;highway&#39;,
+ &#39;highway&#39;,
+ &#39;lanes&#39;,
+ &#39;highway&#39;,
+ &#39;highway&#39;,
+ &#39;source&#39;,
+ &#39;bicycle&#39;,
+ &#39;building&#39;,
+ &#39;width&#39;,
+ &#39;lanes&#39;,
+ &#39;building&#39;,
+ &#39;building&#39;,
+ &#39;building&#39;,
+ &#39;height&#39;,
+ &#39;building&#39;,
+ &#39;highway&#39;,
+ &#39;height&#39;,
+ &#39;building&#39;,
+ &#39;building&#39;,
+ &#39;building&#39;,
+ &#39;access&#39;,
+ &#39;building&#39;,
+ &#39;service&#39;,
+ &#39;surface&#39;]
+
+ sample of &#39;lower_colon&#39; values:
+[&#39;gnis:id&#39;,
+ &#39;addr:state&#39;,
+ &#39;tiger:county&#39;,
+ &#39;tiger:name_base&#39;,
+ &#39;tiger:cfcc&#39;,
+ &#39;tiger:reviewed&#39;,
+ &#39;tiger:county&#39;,
+ &#39;tiger:reviewed&#39;,
+ &#39;tiger:cfcc&#39;,
+ &#39;tiger:zip_left&#39;,
+ &#39;tiger:reviewed&#39;,
+ &#39;tiger:name_base&#39;,
+ &#39;tiger:name_base&#39;,
+ &#39;tiger:reviewed&#39;,
+ &#39;tiger:zip_left&#39;,
+ &#39;tiger:zip_left&#39;,
+ &#39;tiger:county&#39;,
+ &#39;tiger:reviewed&#39;,
+ &#39;hgv:national_network&#39;,
+ &#39;tiger:zip_right&#39;,
+ &#39;tiger:county&#39;,
+ &#39;tiger:reviewed&#39;,
+ &#39;tiger:name_type&#39;,
+ &#39;tiger:name_base&#39;]
+
+ sample of &#39;other&#39; values:
+[&#39;gnis:Class&#39;,
+ &#39;gnis:Class&#39;,
+ &#39;gnis:Class&#39;,
+ &#39;gnis:Class&#39;,
+ &#39;tiger:name_base_1&#39;,
+ &#39;name_1&#39;,
+ &#39;HFCS&#39;,
+ &#39;tiger:name_base_2&#39;,
+ &#39;NCOS:RIV_BASIN&#39;,
+ &#39;NCOS:RIV_BASIN&#39;,
+ &#39;NCOS:SPOPL&#39;,
+ &#39;NCOS:RIV_BASIN&#39;,
+ &#39;tiger:name_base_2&#39;,
+ &#39;tiger:name_base_2&#39;,
+ &#39;tiger:name_base_1&#39;,
+ &#39;tiger:name_base_1&#39;,
+ &#39;HFCS&#39;,
+ &#39;name_1&#39;]
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<blockquote><p>From the above experiment, here are a few take-aways:</p>
+<ul>
+<li>The tags in the "lower" category do not appear to have any problems. </li>
+</ul>
+<ul>
+<li>In the "other" category, there are some attributes that were flagged because they weren't lower case. From the sample, it appears that these represent different acronyms, which are reasonable to be uppercase. </li>
+</ul>
+<ul>
+<li>In the "lower_colon" category, there are some values that I want to mess with, and some that I don't! Quite a few values are from US Census Tiger dataset, and plenty from the USGS Geographic Names Information System (GNIS). These values contain useful information, and could be used to create rich units of address information. </li>
+</ul>
+<p><em>References:</em></p>
+<ul>
+<li><em><a href="http://wiki.openstreetmap.org/wiki/TIGER">http://wiki.openstreetmap.org/wiki/TIGER</a></em></li>
+<li><em><a href="http://wiki.openstreetmap.org/wiki/USGS_GNIS">http://wiki.openstreetmap.org/wiki/USGS_GNIS</a></em></li>
+</ul>
+</blockquote>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h4 id="Getting-an-Overview-of-Street-Information">Getting an Overview of Street Information<a class="anchor-link" href="#Getting-an-Overview-of-Street-Information">&#182;</a></h4><blockquote><p>Before cleaning, I first need to see what street types are present in the data. I'll use the script, <em>street_type_audit.py</em>, to iterate through the sample, looking for any tags with attributes containing street information. This will help me see what potential issues there are in terms of inconsistent street naming or other data quality issues.</p>
+<p>Overall, the streets and their abbreviations look correctly spelled and formulated. Other than a few abbreviations that I'd like to see full words for (i.e. Blvd. to Boulevard), there are really no issues.</p>
+</blockquote>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<blockquote><p>Now I want to use another part of <em>street_type_audit.py</em> to isolate values with problematic street types to see what those types are.</p>
+</blockquote>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[11]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># execute and print results of audit on the XML file</span>
+<span class="n">problematic_street_types</span> <span class="o">=</span> <span class="n">audit</span><span class="p">(</span><span class="n">osmfile</span><span class="p">)</span>
+<span class="n">pprint</span><span class="o">.</span><span class="n">pprint</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">audit</span><span class="p">(</span><span class="n">osmfile</span><span class="p">)))</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>{&#39;4&#39;: {&#39;Abbey Pl #4&#39;},
+ &#39;4b&#39;: {&#39;Sardis Road North Suite 4b&#39;},
+ &#39;Ardsley&#39;: {&#39;Ardsley&#39;},
+ &#39;Ave&#39;: {&#39;Winthrop Ave&#39;},
+ &#39;Ave.&#39;: {&#39;2001 Selwyn Ave.&#39;},
+ &#39;Blvd&#39;: {&#39;Blythe Blvd&#39;, &#39;South Blvd&#39;, &#39;East Blvd&#39;},
+ &#39;Dr&#39;: {&#39;Montford Dr&#39;},
+ &#39;Ext&#39;: {&#39;West 4th Street Ext&#39;},
+ &#39;North&#39;: {&#39;Sardis Road North&#39;},
+ &#39;Pl&#39;: {&#39;Harrisonwoods Pl&#39;},
+ &#39;Plaza&#39;: {&#39;The Plaza&#39;},
+ &#39;Rd&#39;: {&#39;Old Nations Ford Rd&#39;, &#39;Monroe Rd&#39;, &#39;Albemarle Rd&#39;},
+ &#39;St&#39;: {&#39;W Hill St&#39;},
+ &#39;Way&#39;: {&#39;Iverson Way&#39;}}
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<blockquote><p>There are only twelve instances of abbreviation, and the code below will use the "<em>update_name</em>" function in the <em>street_type_audit.py</em> script to change them to a non-abbreviated form. I did find a street abbreviation, "Ext," that wasn't in my street type mapping, so I added it and its pair (Extension) to the dictionary.</p>
+</blockquote>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[12]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># execute the update_name function and print the mapping of old street name to new, updated street name</span>
+<span class="k">for</span> <span class="n">st_type</span><span class="p">,</span> <span class="n">ways</span> <span class="ow">in</span> <span class="n">problematic_street_types</span><span class="o">.</span><span class="n">items</span><span class="p">():</span> 
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">ways</span><span class="p">:</span>
+        <span class="n">better_name</span> <span class="o">=</span> <span class="n">update_name</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">mapping</span><span class="p">)</span>
+        <span class="nb">print</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;=&gt;&quot;</span><span class="p">,</span> <span class="n">better_name</span><span class="p">)</span> 
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>Winthrop Ave =&gt; Winthrop Avenue
+Ardsley =&gt; Ardsley
+2001 Selwyn Ave. =&gt; 2001 Selwyn Avenue
+Blythe Blvd =&gt; Blythe Boulevard
+South Blvd =&gt; South Boulevard
+East Blvd =&gt; East Boulevard
+Iverson Way =&gt; Iverson Way
+Sardis Road North =&gt; Sardis Road North
+Old Nations Ford Rd =&gt; Old Nations Ford Road
+Monroe Rd =&gt; Monroe Road
+Albemarle Rd =&gt; Albemarle Road
+Sardis Road North Suite 4b =&gt; Sardis Road North Suite 4b
+Montford Dr =&gt; Montford Drive
+W Hill St =&gt; W Hill Street
+Harrisonwoods Pl =&gt; Harrisonwoods Place
+Abbey Pl #4 =&gt; Abbey Pl #4
+The Plaza =&gt; The Plaza
+West 4th Street Ext =&gt; West 4th Street Extension
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Data-Processing-and-Cleaning-">Data Processing and Cleaning <a id="Data Processing and Cleaning" /><a class="anchor-link" href="#Data-Processing-and-Cleaning-">&#182;</a></h2><blockquote><p>After having explored the problems and tested my cleaning functions, I will use the script <em>XML_cleanANDwriteCSV.py</em> to process the XML data and perform all the cleaning processes described above.</p>
+</blockquote>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Loading-Data-into-SQL">Loading Data into SQL<a id="Loading Data into SQL" /><a class="anchor-link" href="#Loading-Data-into-SQL">&#182;</a></h2><blockquote><p>Now that I have pulled the parent and child information for the way and node elements into CSV files, I now want to take the data in those CSV files and load them into a SQL database for further analysis. To do this, I need to create the SQL database, define the schemas for and create the tables that will populate the database, and then load the CSVs into their respective SQL tables.</p>
+<p>I used sqlite3 on my local machine to create the database and tables, and to load the data. After defining the schemas and loading the CSVs one-by-by, several times, I used a link the Udacity Project Details to pull a file made by Stephen Welch that has all the schemas pre-defined.* I modified that sql file to create the tables, load the CSVs, delete records with header information, and create a few views, using this code:</p>
+</blockquote>
+<div class="highlight"><pre><span></span><span class="p">.</span><span class="k">read</span> <span class="n">SQL_code_for_charlotte_osm_db</span><span class="p">.</span><span class="k">sql</span>
+</pre></div>
+<blockquote><p>Using this code made the process a lot faster and more repeatable! Thanks Alvin Alexander.*</p>
+<p>references:</p>
+<ul>
+<li><a href="https://gist.github.com/swwelch/f1144229848b407e0a5d13fcb7fbbd6f">https://gist.github.com/swwelch/f1144229848b407e0a5d13fcb7fbbd6f</a></li>
+<li><a href="https://alvinalexander.com/android/sqlite-script-read-execute-how">https://alvinalexander.com/android/sqlite-script-read-execute-how</a></li>
+</ul>
+</blockquote>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Exploration-of-Data-with-SQL-">Exploration of Data with SQL <a id="Exploration of Data with SQL" /><a class="anchor-link" href="#Exploration-of-Data-with-SQL-">&#182;</a></h2><p><a id="SQL Table Keys"></a></p>
+<h3 id="Table-Reference-Guide">Table Reference Guide<a class="anchor-link" href="#Table-Reference-Guide">&#182;</a></h3><blockquote><p>I've found it very helpful to have a fingertip reference of the structure of my tables and their primary/foreign keys. Here are the tables for <strong>'charlotte_osm.db'</strong>:</p>
+</blockquote>
+<p>nodes:</p>
+
+<pre><code>- id (primary key)
+- lat 
+- lon
+- user
+- uid 
+- version
+- changeset
+- timestamp 
+
+</code></pre>
+<p>nodes_tags:</p>
+
+<pre><code>- id (foreign key, nodes)
+- key
+- value
+- type 
+
+</code></pre>
+<p>ways:</p>
+
+<pre><code>- id (primary key)
+- user
+- uid
+- version
+- changeset
+- timestamp
+
+</code></pre>
+<p>ways_tags:</p>
+
+<pre><code>- id (foreign key, ways)
+- key
+- value
+- type
+
+</code></pre>
+<p>ways_nodes:</p>
+
+<pre><code>- id (foreign key, ways)
+- node_id (foreign key, nodes (id))
+- position
+
+</code></pre>
+<h3 id="Questions-to-Answer:">Questions to Answer:<a class="anchor-link" href="#Questions-to-Answer:">&#182;</a></h3><blockquote><ul>
+<li>Get an overview of the types of elements and their numbers<ul>
+<li>Spot check number of: nodes, ways, unique users</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li>How many unique users are there?</li>
+</ul>
+<ul>
+<li>Who are the top users and how much do they contribute compared to the other users?</li>
+</ul>
+<ul>
+<li>What are the main types of nodes, ways, and relations, i.e. what type are they?</li>
+</ul>
+<ul>
+<li><p>What kind of street information is there now?</p>
+<ul>
+<li>Can you make good composite addresses using more fields?</li>
+</ul>
+</li>
+<li><p>Are there any further issues with street names?</p>
+<ul>
+<li>Can I find other street names in other fields?</li>
+</ul>
+</li>
+<li><p>What fields contain postal codes?</p>
+<ul>
+<li>Do the postal codes look good?</li>
+</ul>
+</li>
+<li><p>Is there more TIGER, GNIS, or normal OSM feature data?</p>
+</li>
+</ul>
+</blockquote>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h4 id="How-many-nodes,-ways,-and-way-nodes-are-there?">How many nodes, ways, and way nodes are there?<a class="anchor-link" href="#How-many-nodes,-ways,-and-way-nodes-are-there?">&#182;</a></h4><blockquote><p>How many ways?</p>
+</blockquote>
+<div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span> <span class="n">WaysCount</span> <span class="k">FROM</span> <span class="n">ways</span><span class="p">;</span>
+
+<span class="n">WaysCount</span>
+<span class="c1">----------</span>
+<span class="mi">31370</span>
+</pre></div>
+<blockquote><p>How many nodes are there?</p>
+</blockquote>
+<div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span> <span class="n">NodesCount</span> <span class="k">FROM</span> <span class="n">nodes</span><span class="p">;</span>
+
+<span class="n">NodesCount</span>
+<span class="c1">----------</span>
+<span class="mi">270362</span>
+</pre></div>
+<blockquote><p>Each way is composed of various nodes, with the sub-element tag of 'Nd.' How of these sub-elements are there for <em>ways_nodes</em>?</p>
+</blockquote>
+<div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span> <span class="k">as</span> <span class="n">NdSubEl_Count</span> <span class="k">FROM</span> <span class="n">ways_nodes</span><span class="p">;</span>
+
+<span class="n">NdSubEl_Count</span>
+<span class="c1">-------------</span>
+<span class="mi">306987</span>
+</pre></div>
+<blockquote><p>How many tag elements are there for <em>nodes</em> and <em>ways</em>?</p>
+</blockquote>
+<div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span> <span class="k">as</span> <span class="n">TagsCount</span> <span class="k">FROM</span> <span class="p">(</span>
+        <span class="k">SELECT</span> <span class="o">*</span>
+        <span class="k">FROM</span> <span class="n">nodes_tags</span>
+            <span class="k">UNION</span> <span class="k">ALL</span> 
+        <span class="k">SELECT</span> <span class="o">*</span>
+        <span class="k">FROM</span> <span class="n">ways_tags</span><span class="p">)</span> <span class="k">as</span> <span class="n">w_n_tags</span><span class="p">;</span>
+
+<span class="n">TagsCount</span>
+<span class="c1">----------------</span>
+<span class="mi">76340</span>
+</pre></div>
+<blockquote><p>There are a lot of nodes, and a lot of descriptive tags and Nd elements. Nodes and their associated Nd sub-elements are by far the most numerous elements. There are not as many ways and relations, which makes sense, as there are bound to be more individual points on the map than there are ways connecting them and relations between them.</p>
+</blockquote>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<blockquote><p>How many unique people have edited the map area in question?</p>
+</blockquote>
+<div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="p">(</span><span class="n">waysnnodes</span><span class="p">.</span><span class="n">uid</span><span class="p">))</span>
+<span class="k">FROM</span> <span class="p">(</span><span class="k">SELECT</span> <span class="n">nodes</span><span class="p">.</span><span class="n">uid</span><span class="p">,</span> <span class="n">nodes</span><span class="p">.</span><span class="k">user</span> <span class="k">from</span> <span class="n">nodes</span> <span class="k">UNION</span> <span class="k">ALL</span> <span class="k">SELECT</span> <span class="n">ways</span><span class="p">.</span><span class="n">uid</span><span class="p">,</span> <span class="n">ways</span><span class="p">.</span><span class="k">user</span> <span class="k">FROM</span> <span class="n">ways</span><span class="p">)</span> <span class="n">waysnnodes</span><span class="p">;</span>
+</pre></div>
+<p>Ans: 289</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<blockquote><p>Let's take a look at a sample of those users.</p>
+</blockquote>
+<div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">DISTINCT</span> <span class="n">waysnnodes</span><span class="p">.</span><span class="k">user</span><span class="p">,</span> <span class="n">waysnnodes</span><span class="p">.</span><span class="n">uid</span>
+<span class="k">FROM</span> <span class="p">(</span><span class="k">SELECT</span> <span class="n">nodes</span><span class="p">.</span><span class="n">uid</span><span class="p">,</span> <span class="n">nodes</span><span class="p">.</span><span class="k">user</span> <span class="k">from</span> <span class="n">nodes</span> <span class="k">UNION</span> <span class="k">ALL</span> <span class="k">SELECT</span> <span class="n">ways</span><span class="p">.</span><span class="n">uid</span><span class="p">,</span> <span class="n">ways</span><span class="p">.</span><span class="k">user</span> <span class="k">FROM</span> <span class="n">ways</span><span class="p">)</span> <span class="n">waysnnodes</span>
+<span class="k">LIMIT</span> <span class="mi">15</span>
+<span class="p">;</span>
+</pre></div>
+<div class="highlight"><pre><span></span><span class="k">user</span>                  <span class="n">uid</span>
+<span class="c1">--------------------  -------------------------</span>
+<span class="n">davidearl</span>             <span class="mi">3582</span>
+<span class="n">Edward</span>                <span class="mi">364</span>
+<span class="n">suodrak</span>               <span class="mi">630540</span>
+<span class="n">fbthies</span>               <span class="mi">939079</span>
+<span class="n">nyuriks</span>               <span class="mi">339581</span>
+<span class="n">woodpeck_repair</span>       <span class="mi">145231</span>
+<span class="n">pratikyadav</span>           <span class="mi">2905914</span>
+<span class="n">woodpeck_fixbot</span>       <span class="mi">147510</span>
+<span class="n">bdiscoe</span>               <span class="mi">402624</span>
+<span class="n">Munchabunch</span>           <span class="mi">414318</span>
+<span class="n">rickmastfan67</span>         <span class="mi">252811</span>
+<span class="n">Omnific</span>               <span class="mi">1408522</span>
+<span class="n">KristenK</span>              <span class="mi">1494110</span>
+<span class="n">SEVEN</span>                 <span class="mi">127989</span>
+<span class="n">Dami_Tn</span>               <span class="mi">2012449</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<blockquote><p>Let's see which of those users are the top contributors, based on the number of edits.</p>
+<p>First, I'll create a view for users and the count of their contributions.</p>
+</blockquote>
+<div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">VIEW</span> <span class="n">UserContributionTotals</span> <span class="k">AS</span>
+<span class="k">SELECT</span> <span class="k">COUNT</span><span class="p">(</span><span class="n">waysnnodes</span><span class="p">.</span><span class="n">uid</span><span class="p">)</span> <span class="k">as</span> <span class="n">UserTotals</span><span class="p">,</span> <span class="n">waysnnodes</span><span class="p">.</span><span class="k">user</span>
+<span class="k">FROM</span> <span class="p">(</span>
+    <span class="k">SELECT</span> <span class="n">nodes</span><span class="p">.</span><span class="n">uid</span><span class="p">,</span> <span class="n">nodes</span><span class="p">.</span><span class="k">user</span> 
+    <span class="k">FROM</span> <span class="n">nodes</span> 
+    <span class="k">UNION</span> <span class="k">ALL</span> 
+    <span class="k">SELECT</span> <span class="n">ways</span><span class="p">.</span><span class="n">uid</span><span class="p">,</span> <span class="n">ways</span><span class="p">.</span><span class="k">user</span> 
+    <span class="k">FROM</span> <span class="n">ways</span><span class="p">)</span> <span class="n">waysnnodes</span>
+<span class="k">GROUP</span> <span class="k">BY</span> <span class="n">waysnnodes</span><span class="p">.</span><span class="n">uid</span>
+<span class="k">ORDER</span> <span class="k">BY</span> <span class="k">COUNT</span><span class="p">(</span><span class="n">waysnnodes</span><span class="p">.</span><span class="n">uid</span><span class="p">)</span> <span class="k">DESC</span>
+<span class="p">;</span>
+</pre></div>
+<blockquote><p>Then query the view for the top 20 contributors.</p>
+</blockquote>
+<div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">UserTotals</span><span class="p">,</span> <span class="k">user</span>
+<span class="k">FROM</span> <span class="p">(</span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">UserContributionTotals</span> <span class="k">LIMIT</span> <span class="mi">20</span><span class="p">)</span>
+<span class="p">;</span>
+</pre></div>
+<blockquote><p>These are the top 20 contributors, by number of edits. As you can see, the distribution of top contributors is very skewed, with the top three contributing an order of magnitude more than any others.</p>
+</blockquote>
+<div class="highlight"><pre><span></span><span class="n">UserTotals</span>            <span class="k">user</span>
+<span class="c1">--------------------  -------------------------</span>
+<span class="mi">165243</span>                <span class="n">Omnific</span>
+<span class="mi">47550</span>                 <span class="n">woodpeck_fixbot</span>
+<span class="mi">21933</span>                 <span class="n">jumbanho</span>
+<span class="mi">7222</span>                  <span class="n">HeyYoJimbo</span>
+<span class="mi">5349</span>                  <span class="n">bdiscoe</span>
+<span class="mi">5025</span>                  <span class="n">Yoshinion</span>
+<span class="mi">4466</span>                  <span class="n">Becker_MN_Import_Acc</span>
+<span class="mi">3220</span>                  <span class="n">WashuOtaku</span>
+<span class="mi">2954</span>                  <span class="n">Fortepc</span>
+<span class="mi">2694</span>                  <span class="n">Bancheee</span>
+<span class="mi">2495</span>                  <span class="n">tobin</span>
+<span class="mi">1815</span>                  <span class="n">maxerickson</span>
+<span class="mi">1803</span>                  <span class="n">Brian</span> <span class="n">F</span>
+<span class="mi">1787</span>                  <span class="n">bot</span><span class="o">-</span><span class="k">mode</span>
+<span class="mi">1748</span>                  <span class="n">woodpeck_repair</span>
+<span class="mi">1422</span>                  <span class="n">andrewpmk</span>
+<span class="mi">1334</span>                  <span class="n">Jruze</span>
+<span class="mi">1283</span>                  <span class="n">rickmastfan67</span>
+<span class="mi">1223</span>                  <span class="n">emacsen_dwg</span>
+<span class="mi">1211</span>                  <span class="n">botdidier2020</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<blockquote><p>How many total user contributions are there for this area?</p>
+</blockquote>
+<div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">SUM</span><span class="p">(</span><span class="n">UserTotals</span><span class="p">)</span>
+<span class="k">FROM</span> <span class="p">(</span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">UserContributionTotals</span><span class="p">)</span>
+<span class="p">;</span>
+</pre></div>
+<blockquote><p>Ans: 301732</p>
+<p>How many contributions did the top three users make?</p>
+</blockquote>
+<div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">SUM</span><span class="p">(</span><span class="n">UserTotals</span><span class="p">)</span>
+<span class="k">FROM</span> <span class="p">(</span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">UserContributionTotals</span> <span class="k">LIMIT</span> <span class="mi">3</span><span class="p">)</span>
+<span class="p">;</span>
+</pre></div>
+<blockquote><p>Ans: 234726 contributions, or ~78% of the contributions, which suggests a Pareto relationship between users and mapping contributions.</p>
+</blockquote>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<blockquote><p>What are the main types of nodes and ways, i.e. what do those elements represent on the map?</p>
+<p>Before examining this information further, I will combine the <em>nodes_tags</em> and <em>ways_tags</em> tables, which have the same <a href="#SQL Table Keys">structure</a>, in order to get a more complete picture of what these data sets hold.</p>
+</blockquote>
+<div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">VIEW</span> <span class="n">nodeANDway_tags</span> <span class="k">AS</span>
+        <span class="k">SELECT</span> <span class="o">*</span>
+        <span class="k">FROM</span> <span class="n">nodes_tags</span>
+            <span class="k">UNION</span> <span class="k">ALL</span> 
+        <span class="k">SELECT</span> <span class="o">*</span>
+        <span class="k">FROM</span> <span class="n">ways_tags</span>
+<span class="p">;</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<blockquote><p>What categories of tag 'type' are there?</p>
+</blockquote>
+<div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">type</span> <span class="k">FROM</span> <span class="n">nodeANDway_tags</span> <span class="k">GROUP</span> <span class="k">BY</span> <span class="k">type</span><span class="p">;</span>
+
+<span class="k">type</span>
+<span class="c1">-------------------------</span>
+<span class="n">addr</span>
+<span class="n">area</span>
+<span class="n">brand</span>
+<span class="n">building</span>
+<span class="n">census</span>
+<span class="n">communication</span>
+<span class="n">contact</span>
+<span class="n">cost</span>
+<span class="n">cycleway</span>
+<span class="n">demolished</span>
+<span class="n">destination</span>
+<span class="n">diet</span>
+<span class="n">gnis</span>
+<span class="n">healthcare</span>
+<span class="n">hgv</span>
+<span class="n">internet_access</span>
+<span class="n">is_in</span>
+<span class="n">lanes</span>
+<span class="n">maxspeed</span>
+<span class="n">mtb</span>
+<span class="n">name</span>
+<span class="n">note</span>
+<span class="n">payment</span>
+<span class="n">railway</span>
+<span class="n">regular</span>
+<span class="n">roof</span>
+<span class="n">service</span>
+<span class="k">source</span>
+<span class="n">tiger</span>
+<span class="n">toilets</span>
+<span class="n">tower</span>
+<span class="n">turn</span>
+<span class="n">wheelchair</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<blockquote><p>Originally, the type field was meant to unbundle colon-bundled address information like "addr:street," "addr:house," etc... It appears that many more pieces of colon-bundled information got swept up by the <em>"shape_tag"</em> helper function of the <em>"shape_element"</em> function.</p>
+<p>Let's see what 'keys' were captured for the addr type.</p>
+</blockquote>
+<div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">type</span><span class="p">,</span> <span class="k">key</span> <span class="k">FROM</span> <span class="n">nodeANDway_tags</span> <span class="k">WHERE</span> <span class="k">type</span> <span class="o">==</span> <span class="s1">&#39;addr&#39;</span> <span class="k">GROUP</span> <span class="k">BY</span> <span class="k">key</span><span class="p">;</span>
+
+<span class="k">type</span>        <span class="k">key</span>
+<span class="c1">----------  --------------------</span>
+<span class="n">addr</span>        <span class="n">city</span>
+<span class="n">addr</span>        <span class="n">country</span>
+<span class="n">addr</span>        <span class="n">door</span>
+<span class="n">addr</span>        <span class="n">floor</span>
+<span class="n">addr</span>        <span class="n">housename</span>
+<span class="n">addr</span>        <span class="n">housenumber</span>
+<span class="n">addr</span>        <span class="n">housenumber_1</span>
+<span class="n">addr</span>        <span class="n">place</span>
+<span class="n">addr</span>        <span class="n">postcode</span>
+<span class="n">addr</span>        <span class="k">state</span>
+<span class="n">addr</span>        <span class="n">street</span>
+<span class="n">addr</span>        <span class="n">street_1</span>
+<span class="n">addr</span>        <span class="n">unit</span>
+</pre></div>
+<blockquote><p>There are 12 different keys tied to the 'addr' type. The values associated with each of these keys will be helpful in compiling complete address information for a node.</p>
+<p>The code below will show the records pertaining to one particular unit of address information.</p>
+</blockquote>
+<div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">nodeANDway_tags</span> <span class="k">WHERE</span> <span class="k">type</span> <span class="o">==</span> <span class="n">addr</span> <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">id</span> <span class="k">LIMIT</span> <span class="mi">5</span><span class="p">;</span>
+
+<span class="n">id</span>          <span class="k">key</span>                   <span class="n">value</span>                 <span class="k">type</span>
+<span class="c1">----------  --------------------  --------------------  ----------</span>
+<span class="mi">38619400</span>    <span class="n">city</span>                  <span class="n">Charlotte</span>             <span class="n">addr</span>
+<span class="mi">38619400</span>    <span class="n">housenumber</span>           <span class="mi">2365</span>                  <span class="n">addr</span>
+<span class="mi">38619400</span>    <span class="n">postcode</span>              <span class="mi">28266</span>                 <span class="n">addr</span>
+<span class="mi">38619400</span>    <span class="k">state</span>                 <span class="n">NC</span>                    <span class="n">addr</span>
+<span class="mi">38619400</span>    <span class="n">street</span>                <span class="n">Carmel</span> <span class="n">Road</span>           <span class="n">addr</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<blockquote><h4 id="What-values-are-there-for:">What values are there for:<a class="anchor-link" href="#What-values-are-there-for:">&#182;</a></h4><ul>
+<li>state?</li>
+<li>postcode?</li>
+<li>house number?</li>
+<li>city?</li>
+<li>country?</li>
+</ul>
+</blockquote>
+<div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">),</span> <span class="k">key</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="k">type</span>
+<span class="k">FROM</span> <span class="n">nodeANDway_tags</span>
+<span class="k">WHERE</span> <span class="k">key</span> <span class="k">LIKE</span> <span class="s1">&#39;%state&#39;</span>
+<span class="k">GROUP</span> <span class="k">BY</span> <span class="n">value</span>
+<span class="p">;</span>
+
+<span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>              <span class="k">key</span>                        <span class="n">value</span>       <span class="k">type</span>
+<span class="c1">--------------------  -------------------------  ----------  ----------</span>
+<span class="mi">222</span>                   <span class="k">state</span>                      <span class="n">NC</span>          <span class="n">addr</span>
+</pre></div>
+<blockquote><p>I wouldn't expect there to be other states than NC, but it was worth checking.</p>
+</blockquote>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<blockquote><p>What range of values are there for postal codes? Are there any obvious errors?</p>
+</blockquote>
+<div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">),</span> <span class="k">key</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="k">type</span>
+<span class="k">FROM</span> <span class="n">nodeANDway_tags</span>
+<span class="k">WHERE</span> <span class="k">key</span> <span class="k">LIKE</span> <span class="s1">&#39;%postcode&#39;</span>
+<span class="k">GROUP</span> <span class="k">BY</span> <span class="n">value</span>
+<span class="k">ORDER</span> <span class="k">BY</span> <span class="n">value</span> 
+<span class="p">;</span>
+
+<span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>    <span class="k">key</span>         <span class="n">value</span>       <span class="k">type</span>
+<span class="c1">----------  ----------  ----------  ----------</span>
+<span class="mi">5</span>           <span class="n">postcode</span>    <span class="mi">28023</span>       <span class="n">addr</span>
+<span class="mi">42</span>          <span class="n">postcode</span>    <span class="mi">28202</span>       <span class="n">addr</span>
+<span class="mi">62</span>          <span class="n">postcode</span>    <span class="mi">28203</span>       <span class="n">addr</span>
+<span class="mi">17</span>          <span class="n">postcode</span>    <span class="mi">28204</span>       <span class="n">addr</span>
+<span class="mi">31</span>          <span class="n">postcode</span>    <span class="mi">28205</span>       <span class="n">addr</span>
+<span class="mi">12</span>          <span class="n">postcode</span>    <span class="mi">28207</span>       <span class="n">addr</span>
+<span class="mi">7</span>           <span class="n">postcode</span>    <span class="mi">28208</span>       <span class="n">addr</span>
+<span class="mi">55</span>          <span class="n">postcode</span>    <span class="mi">28209</span>       <span class="n">addr</span>
+<span class="mi">22</span>          <span class="n">postcode</span>    <span class="mi">28210</span>       <span class="n">addr</span>
+<span class="mi">14</span>          <span class="n">postcode</span>    <span class="mi">28211</span>       <span class="n">addr</span>
+<span class="mi">1</span>           <span class="n">postcode</span>    <span class="mi">28211</span><span class="o">-</span><span class="mi">4411</span>  <span class="n">addr</span>
+<span class="mi">4</span>           <span class="n">postcode</span>    <span class="mi">28212</span>       <span class="n">addr</span>
+<span class="mi">8</span>           <span class="n">postcode</span>    <span class="mi">28217</span>       <span class="n">addr</span>
+<span class="mi">5</span>           <span class="n">postcode</span>    <span class="mi">28226</span>       <span class="n">addr</span>
+<span class="mi">2</span>           <span class="n">postcode</span>    <span class="mi">28227</span>       <span class="n">addr</span>
+<span class="mi">1</span>           <span class="n">postcode</span>    <span class="mi">28244</span>       <span class="n">addr</span>
+<span class="mi">1</span>           <span class="n">postcode</span>    <span class="mi">28266</span>       <span class="n">addr</span>
+<span class="mi">10</span>          <span class="n">postcode</span>    <span class="mi">28270</span>       <span class="n">addr</span>
+<span class="mi">1</span>           <span class="n">postcode</span>    <span class="mi">28273</span>       <span class="n">addr</span>
+<span class="mi">1</span>           <span class="n">postcode</span>    <span class="mi">28274</span>       <span class="n">addr</span>
+<span class="mi">1</span>           <span class="n">postcode</span>    <span class="mi">48009</span>       <span class="n">addr</span>
+<span class="mi">1</span>           <span class="n">postcode</span>    <span class="n">NC</span>          <span class="n">addr</span>
+<span class="mi">1</span>           <span class="n">postcode</span>    <span class="n">NC</span> <span class="mi">28202</span>    <span class="n">addr</span>
+<span class="mi">1</span>           <span class="n">postcode</span>    <span class="n">NC28209</span>     <span class="n">addr</span>
+</pre></div>
+<blockquote><p>There are a few postal codes that stand out: 28023, 48009, and, obviously, 28211-4411, NC, NC 28202, and NC28209. The last four are clearly errors or non-uniform data. Regarding the first two, 28023 is probably a typing error, as it is a zip code for a <a href="https://www.google.com/maps/place/China+Grove,+NC+28023/@35.5746279,-80.7341066,11z/data=!3m1!4b1!4m5!3m4!1s0x8853f7bf66dda875:0xb46ea0adc083b48f!8m2!3d35.5805091!4d-80.5993854">town</a> that is an hour away, and 28203 is a zip code close to downtown Charlotte. 48009 is definitely an error, since it is a postal code for <a href="https://www.google.com/maps/place/Birmingham,+MI+48009/@42.5456942,-83.2342796,14z/data=!3m1!4b1!4m5!3m4!1s0x8824c7a8176abb85:0x8ed1a286ce141f4a!8m2!3d42.5410436!4d-83.2131206">Birmingham, Michigan</a>.</p>
+</blockquote>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<blockquote><p>How about the values for housenumber?</p>
+</blockquote>
+<div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">),</span> <span class="k">key</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="k">type</span>
+<span class="k">FROM</span> <span class="n">nodeANDway_tags</span>
+<span class="k">WHERE</span> <span class="k">key</span> <span class="k">LIKE</span> <span class="s1">&#39;%housenumber&#39;</span>
+<span class="k">GROUP</span> <span class="k">BY</span> <span class="n">value</span>
+<span class="k">ORDER</span> <span class="k">BY</span> <span class="n">value</span> 
+<span class="p">;</span>
+</pre></div>
+<blockquote><p>Nothing remarkable in the results of that query.</p>
+</blockquote>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<blockquote><p>Cities, in the city of Charlotte?</p>
+</blockquote>
+<div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">),</span> <span class="k">key</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="k">type</span>
+<span class="k">FROM</span> <span class="n">nodeANDway_tags</span>
+<span class="k">WHERE</span> <span class="k">key</span> <span class="k">LIKE</span> <span class="s1">&#39;%city&#39;</span>
+<span class="k">GROUP</span> <span class="k">BY</span> <span class="n">value</span>
+<span class="k">ORDER</span> <span class="k">BY</span> <span class="n">value</span> 
+<span class="p">;</span>
+
+<span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>    <span class="k">key</span>         <span class="n">value</span>                 <span class="k">type</span>
+<span class="c1">----------  ----------  --------------------  ----------</span>
+<span class="mi">2</span>           <span class="n">capacity</span>    <span class="mi">4</span>                     <span class="n">regular</span>
+<span class="mi">1</span>           <span class="n">capacity</span>    <span class="mi">5</span>                     <span class="n">regular</span>
+<span class="mi">1</span>           <span class="n">capacity</span>    <span class="mi">55</span>                    <span class="n">regular</span>
+<span class="mi">1</span>           <span class="n">city</span>        <span class="n">Charlote</span>              <span class="n">addr</span>
+<span class="mi">306</span>         <span class="n">city</span>        <span class="n">Charlotte</span>             <span class="n">addr</span>
+<span class="mi">1</span>           <span class="n">city</span>        <span class="n">Charlotte</span><span class="p">,</span> <span class="n">NC</span>         <span class="n">addr</span>
+</pre></div>
+<blockquote><p>Just a spelling error and some extra information. Only one record with each error!</p>
+</blockquote>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<blockquote><p>Last one, any unusual countries?</p>
+</blockquote>
+<div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">),</span> <span class="k">key</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="k">type</span>
+<span class="k">FROM</span> <span class="n">nodeANDway_tags</span>
+<span class="k">WHERE</span> <span class="k">key</span> <span class="k">LIKE</span> <span class="s1">&#39;%country&#39;</span>
+<span class="k">GROUP</span> <span class="k">BY</span> <span class="n">value</span>
+<span class="k">ORDER</span> <span class="k">BY</span> <span class="n">value</span> 
+<span class="p">;</span>
+
+<span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>    <span class="k">key</span>         <span class="n">value</span>                      <span class="k">type</span>
+<span class="c1">----------  ----------  -------------------------  ----------</span>
+<span class="mi">6</span>           <span class="n">country</span>     <span class="n">US</span>                         <span class="n">addr</span>
+<span class="mi">2</span>           <span class="n">country</span>     <span class="n">USA</span>                        <span class="n">addr</span>
+</pre></div>
+<blockquote><p>All US or USA. It would probably be worth making those entries uniform.</p>
+<p><em>Reference:</em></p>
+<ul>
+<li><em>SQL 'LIKE '%example' parameter, Udacity SQL Sample Project, <a href="https://gist.github.com/carlward/54ec1c91b62a5f911c42#file-sample_project-md">https://gist.github.com/carlward/54ec1c91b62a5f911c42#file-sample_project-md</a></em></li>
+</ul>
+</blockquote>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Worthy-Options-for-Further-Cleaning-">Worthy Options for Further Cleaning <a id="Worthy Options for Further Cleaning" /><a class="anchor-link" href="#Worthy-Options-for-Further-Cleaning-">&#182;</a></h2><blockquote><p>There were a few data cleanliness issues that I did not address, and which could be good opportunities for further work. For example, I focused on cleaning address information of the OSM feature type, but there are also many records from the Tiger dataset. For example, see this 'highway' record:</p>
+</blockquote>
+<div class="highlight"><pre><span></span><span class="nt">&lt;way</span> <span class="na">id=</span><span class="s">&quot;16668607&quot;</span> <span class="na">version=</span><span class="s">&quot;7&quot;</span> <span class="na">timestamp=</span><span class="s">&quot;2014-08-14T13:49:20Z&quot;</span> <span class="na">changeset=</span><span class="s">&quot;24746007&quot;</span> <span class="na">uid=</span><span class="s">&quot;105454&quot;</span> <span class="na">user=</span><span class="s">&quot;hopfavogl&quot;</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;nd</span> <span class="na">ref=</span><span class="s">&quot;172274468&quot;</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;nd</span> <span class="na">ref=</span><span class="s">&quot;3016461626&quot;</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;nd</span> <span class="na">ref=</span><span class="s">&quot;172274470&quot;</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;nd</span> <span class="na">ref=</span><span class="s">&quot;2401902303&quot;</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;nd</span> <span class="na">ref=</span><span class="s">&quot;172274476&quot;</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;tag</span> <span class="na">k=</span><span class="s">&quot;highway&quot;</span> <span class="na">v=</span><span class="s">&quot;residential&quot;</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;tag</span> <span class="na">k=</span><span class="s">&quot;name&quot;</span> <span class="na">v=</span><span class="s">&quot;Piedmont Street&quot;</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;tag</span> <span class="na">k=</span><span class="s">&quot;tiger:cfcc&quot;</span> <span class="na">v=</span><span class="s">&quot;A41&quot;</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;tag</span> <span class="na">k=</span><span class="s">&quot;tiger:county&quot;</span> <span class="na">v=</span><span class="s">&quot;Mecklenburg, NC&quot;</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;tag</span> <span class="na">k=</span><span class="s">&quot;tiger:name_base&quot;</span> <span class="na">v=</span><span class="s">&quot;Piedmont&quot;</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;tag</span> <span class="na">k=</span><span class="s">&quot;tiger:name_type&quot;</span> <span class="na">v=</span><span class="s">&quot;St&quot;</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;tag</span> <span class="na">k=</span><span class="s">&quot;tiger:reviewed&quot;</span> <span class="na">v=</span><span class="s">&quot;no&quot;</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;tag</span> <span class="na">k=</span><span class="s">&quot;tiger:zip_left&quot;</span> <span class="na">v=</span><span class="s">&quot;28204&quot;</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;tag</span> <span class="na">k=</span><span class="s">&quot;tiger:zip_right&quot;</span> <span class="na">v=</span><span class="s">&quot;28204&quot;</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;/way&gt;</span>
+</pre></div>
+<blockquote><p>In fact, if I were to focus on more data cleaning and/or compiling detailed addresses for features, it would be nice to know which source of address data has more features, the OSM, GNIS, or Tiger data types.</p>
+</blockquote>
+<div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">type</span><span class="p">,</span> <span class="k">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="p">(</span><span class="n">id</span><span class="p">))</span> <span class="k">as</span> <span class="n">Num_Features</span>
+<span class="k">FROM</span> <span class="n">nodeANDway_tags</span>
+<span class="k">WHERE</span> <span class="k">type</span> <span class="o">=</span> <span class="ss">&quot;gnis&quot;</span> <span class="k">OR</span> <span class="k">type</span> <span class="o">=</span> <span class="ss">&quot;tiger&quot;</span> <span class="k">OR</span> <span class="k">type</span> <span class="o">=</span> <span class="ss">&quot;addr&quot;</span>
+<span class="k">GROUP</span> <span class="k">BY</span> <span class="k">type</span>
+<span class="k">ORDER</span> <span class="k">BY</span> <span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span> <span class="k">DESC</span>
+<span class="p">;</span>
+
+<span class="k">type</span>        <span class="n">Num_Features</span>
+<span class="c1">----------  ---------------</span>
+<span class="n">tiger</span>       <span class="mi">3105</span>
+<span class="n">addr</span>        <span class="mi">397</span>
+<span class="n">gnis</span>        <span class="mi">201</span>
+</pre></div>
+<blockquote><p>As it turns out, the tiger data has address information for the most features, followed the OSM (addr) type, and then the GNIS type. For the sake of efficiency, it would definitely be worth focusing on the Tiger records. Thus, to more thoroughly clean street information, it would be a very good idea to expand the "<em>is_street_name</em>" function to include these records. This would not be a very difficult process.</p>
+<p>Another issue I noticed is in node tags with the key '<em>is_in</em>'. They all have the value '<em>Mecklenburg,North Carolina,N.C.,NC,USA</em>,' which clearly needs to be cleaned up. See the example element below.</p>
+<p>To fix this issue, one could simply alter four functions: '<em>is_street_name</em>,' '<em>audit_street_type</em>, '<em>audit</em>', and '<em>update_name</em>'. Instead of looking for and updating a street type, you would modify the functions to look for 'is_in' attributes and change their values to a clean version of the duplicate-ridden value.</p>
+</blockquote>
+<div class="highlight"><pre><span></span><span class="nt">&lt;node</span> <span class="na">id=</span><span class="s">&quot;153902091&quot;</span> <span class="na">lat=</span><span class="s">&quot;35.2136142&quot;</span> <span class="na">lon=</span><span class="s">&quot;-80.8257289&quot;</span> <span class="na">version=</span><span class="s">&quot;4&quot;</span> <span class="na">timestamp=</span><span class="s">&quot;2017-09-24T08:41:42Z&quot;</span> <span class="na">changeset=</span><span class="s">&quot;52322768&quot;</span> <span class="na">uid=</span><span class="s">&quot;364&quot;</span> <span class="na">user=</span><span class="s">&quot;Edward&quot;</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;tag</span> <span class="na">k=</span><span class="s">&quot;ele&quot;</span> <span class="na">v=</span><span class="s">&quot;209&quot;</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;tag</span> <span class="na">k=</span><span class="s">&quot;gnis:Class&quot;</span> <span class="na">v=</span><span class="s">&quot;Populated Place&quot;</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;tag</span> <span class="na">k=</span><span class="s">&quot;gnis:County&quot;</span> <span class="na">v=</span><span class="s">&quot;Mecklenburg&quot;</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;tag</span> <span class="na">k=</span><span class="s">&quot;gnis:County_num&quot;</span> <span class="na">v=</span><span class="s">&quot;119&quot;</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;tag</span> <span class="na">k=</span><span class="s">&quot;gnis:ST_alpha&quot;</span> <span class="na">v=</span><span class="s">&quot;NC&quot;</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;tag</span> <span class="na">k=</span><span class="s">&quot;gnis:ST_num&quot;</span> <span class="na">v=</span><span class="s">&quot;37&quot;</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;tag</span> <span class="na">k=</span><span class="s">&quot;gnis:id&quot;</span> <span class="na">v=</span><span class="s">&quot;1001262&quot;</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;tag</span> <span class="na">k=</span><span class="s">&quot;import_uuid&quot;</span> <span class="na">v=</span><span class="s">&quot;bb7269ee-502a-5391-8056-e3ce0e66489c&quot;</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;tag</span> <span class="na">k=</span><span class="s">&quot;is_in&quot;</span> <span class="na">v=</span><span class="s">&quot;Mecklenburg,North Carolina,N.C.,NC,USA&quot;</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;tag</span> <span class="na">k=</span><span class="s">&quot;name&quot;</span> <span class="na">v=</span><span class="s">&quot;Elizabeth&quot;</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;tag</span> <span class="na">k=</span><span class="s">&quot;place&quot;</span> <span class="na">v=</span><span class="s">&quot;hamlet&quot;</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;tag</span> <span class="na">k=</span><span class="s">&quot;wikidata&quot;</span> <span class="na">v=</span><span class="s">&quot;Q5362242&quot;</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;/node&gt;</span>
+</pre></div>
+<div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">),</span> <span class="k">key</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="k">type</span> <span class="k">FROM</span> <span class="n">nodeANDway_tags</span> <span class="k">WHERE</span> <span class="k">key</span> <span class="o">==</span> <span class="s1">&#39;is_in&#39;</span><span class="p">;</span>
+
+<span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>    <span class="k">key</span>         <span class="n">value</span>                                     <span class="k">type</span>
+<span class="c1">----------  ----------  ----------------------------------------  ----------</span>
+<span class="mi">85</span>          <span class="n">is_in</span>       <span class="n">Mecklenburg</span><span class="p">,</span><span class="n">North</span> <span class="n">Carolina</span><span class="p">,</span><span class="n">N</span><span class="p">.</span><span class="k">C</span><span class="p">.,</span><span class="n">NC</span><span class="p">,</span><span class="n">USA</span>    <span class="n">regular</span>
+</pre></div>
+<blockquote><p>Since there are 85 records with this issue, it would definitely be worth doing.</p>
+</blockquote>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Ideas-for-Improving-the-Data">Ideas for Improving the Data<a class="anchor-link" href="#Ideas-for-Improving-the-Data">&#182;</a></h2><blockquote><p>Using this query (already used above), we saw that there are only 289 unique map contributors for this entire map area (for a major metro area).</p>
+</blockquote>
+<div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="p">(</span><span class="n">waysnnodes</span><span class="p">.</span><span class="n">uid</span><span class="p">))</span>
+<span class="k">FROM</span> <span class="p">(</span><span class="k">SELECT</span> <span class="n">nodes</span><span class="p">.</span><span class="n">uid</span><span class="p">,</span> <span class="n">nodes</span><span class="p">.</span><span class="k">user</span> <span class="k">from</span> <span class="n">nodes</span> <span class="k">UNION</span> <span class="k">ALL</span> <span class="k">SELECT</span> <span class="n">ways</span><span class="p">.</span><span class="n">uid</span><span class="p">,</span> <span class="n">ways</span><span class="p">.</span><span class="k">user</span> <span class="k">FROM</span> <span class="n">ways</span><span class="p">)</span> <span class="n">waysnnodes</span><span class="p">;</span>
+</pre></div>
+<blockquote><p>Of those 289 users, the top 3 made ~78% of the contributions. While this is cool that there are such productive power users, I think expanding the base of contributors would make Open Street Map a more popular tool.</p>
+<p>One way to increase use and contributors would be to make a mobile app that gamified the contribution process.</p>
+</blockquote>
+<h4 id="Benefits">Benefits<a class="anchor-link" href="#Benefits">&#182;</a></h4><ul>
+<li><p>If more people were contributing, I think that would drive overall use and popularity of OSM. If you made edits, you would take pride and ownership over the resource and would encourage your friends and family to do the same.</p>
+</li>
+<li><p>Increasing the base of stakeholders would enhance the distributed nature of OSM. In the face of extremely powerful, centralized platforms and data sources like Google and Apple, having a popular, decentralized source of location and mapping data is invaluable.</p>
+</li>
+<li><p>Gamifying the contribution process could appeal to children, which would help open up the world of technology in applied and constructive way, which would be a good thing on multiple levels.</p>
+</li>
+</ul>
+<h4 id="Anticipated-Problems">Anticipated Problems<a class="anchor-link" href="#Anticipated-Problems">&#182;</a></h4><ul>
+<li><p>While a game-interface to map contributions would make that process a lot more fun, it might make it harder to control for quality of contributions. For example, if kids were adding and changing map features, they might not enter correct or valid information. Structuring the editing process to limit this would be essential.</p>
+</li>
+<li><p>Creating, running, and updating a game could would be a pretty big task, and likely require its own philanthropic funding, and additional layers of management complexity to the already complex OSM organization.</p>
+</li>
+</ul>
+
+</div>
+</div>
+</div>
+    </div>
+  </div>
+                </article>
+            </aside><!-- /#featured -->
+        <section id="extras" class="body">
+                <div class="social">
+                        <h2>social</h2>
+                        <ul>
+
+                            <li><a href="https://github.com/brentnixon">Github</a></li>
+                            <li><a href="https://linkedin.com/in/nixonbrenta/">Linkedin</a></li>
+                        </ul>
+                </div><!-- /.social -->
+        </section><!-- /#extras -->
+
+        <footer id="contentinfo" class="body">
+                <address id="about" class="vcard body">
+                Proudly powered by <a href="http://getpelican.com/">Pelican</a>, which takes great advantage of <a href="http://python.org">Python</a>.
+                </address><!-- /#about -->
+
+                <p>The theme is by <a href="http://coding.smashingmagazine.com/2009/08/04/designing-a-html-5-layout-from-scratch/">Smashing Magazine</a>, thanks!</p>
+        </footer><!-- /#contentinfo -->
+
+</body>
+</html>
