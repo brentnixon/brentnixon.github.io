@@ -41,7 +41,7 @@
                 By                         <a class="url fn" href="/author/brent-nixon.html">Brent Nixon</a>
         </address>
 <p>In <a href="/category/ml.html">ML</a>.</p>
-<p>tags: <a href="/tag/scikit-learn.html">scikit-learn</a> <a href="/tag/classification.html">classification</a> <a href="/tag/supervised-learning.html">supervised learning</a> </p>
+<p>tags: <a href="/tag/ml.html">ML</a> <a href="/tag/scikit-learn.html">scikit-learn</a> </p>
 </footer><!-- /.post-info -->      <h1>Supervised Fraud</h1>
 <p>The goal of this project was to build a model that, trained on financial and email data for the Enron employees, could then predict whether an unseen employee, by virtue of their data, was a person-of-interest (POI) in the fraud investigation. Machine learning is useful to this end because it allows us to examine a large body of data points that hold patterns which we would not necessarily be able to identify through simple analysis. A machine learning model takes that body of disparate data, 'learns' patterns in it that correspond to a particular label, and determines how closely that new unit matches the patterns associated with each label, resulting in a prediction for membership in a class/label. </p>
 <h2>Setup, and Load Data</h2>
@@ -1671,7 +1671,7 @@ or algorithm tuning. This will help me get a baseline understanding of how the
 </pre></div>
 
 
-<p><img alt="png" src="output_55_0.png"></p>
+<p><img alt="png" src="images/ML_project_NB_forBlog_55_0.png"></p>
 <div class="highlight"><pre><span></span><span class="c1">## feature importances</span>
 <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">clf</span><span class="o">.</span><span class="n">named_steps</span><span class="p">[</span><span class="s1">&#39;clf&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">feature_importances_</span><span class="p">,</span> 
@@ -1689,7 +1689,7 @@ or algorithm tuning. This will help me get a baseline understanding of how the
 </pre></div>
 
 
-<p><img alt="png" src="output_56_0.png"></p>
+<p><img alt="png" src="images/ML_project_NB_forBlog_56_0.png"></p>
 <div class="highlight"><pre><span></span><span class="n">InitializeDatas</span><span class="p">(</span><span class="n">add_dummies</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">make_upsampled</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 <span class="c1">## Gradient Boosting Classifier</span>
 <span class="n">estimators</span> <span class="o">=</span> <span class="p">[(</span><span class="s1">&#39;Scaler&#39;</span><span class="p">,</span> <span class="n">StandardScaler</span><span class="p">()),</span>
@@ -4400,7 +4400,7 @@ The precision is 0.4
 </pre></div>
 
 
-<p><img alt="png" src="output_68_0.png"></p>
+<p><img alt="png" src="images/ML_project_NB_forBlog_68_0.png"></p>
 <div class="highlight"><pre><span></span><span class="n">InitializeDatas</span><span class="p">(</span><span class="n">add_dummies</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">make_upsampled</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 <span class="c1">## K Neighbors Classifier</span>
 <span class="n">estimators</span> <span class="o">=</span> <span class="p">[</span>
